@@ -7,23 +7,16 @@ using System.Linq;
 
 namespace Schemy
 {
-    /// <summary>
-    /// Represents a procedure value in Scheme
-    /// </summary>
+    /// <summary>Represents a procedure value in Scheme</summary>
     interface ICallable
     {
-        /// <summary>
-        /// Invokes this procedure
-        /// </summary>
+        /// <summary>Invokes this procedure</summary>
         /// <param name="args">The arguments. These are the `cdr` of the s-expression for the procedure invocation.</param>
         /// <returns>the result of the procedure invocation</returns>
         object Call(List<object> args);
     }
 
-    /// <summary>
-    /// A procedure implemented in Scheme
-    /// </summary>
-    /// <seealso cref="Schemy.ICallable" />
+    /// <summary>A procedure implemented in Scheme</summary>
     public class Procedure : ICallable
     {
         private readonly Union<Symbol, List<Symbol>> parameters;
@@ -72,9 +65,7 @@ namespace Schemy
             return Interpreter.EvaluateExpression(this.body, Environment.FromVariablesAndValues(this.parameters, args, this.env));
         }
 
-        /// <summary>
-        /// Prints the implementation of the function.
-        /// </summary>
+        /// <summary>Prints the implementation of the function</summary>
         public override string ToString()
         {
             var form = new List<object> { Symbol.LAMBDA, this.parameters.Use(sym => (object)sym, syms => syms.Cast<object>().ToList()), this.body };
@@ -82,10 +73,7 @@ namespace Schemy
         }
     }
 
-    /// <summary>
-    /// A procedure implemented in .NET
-    /// </summary>
-    /// <seealso cref="Schemy.ICallable" />
+    /// <summary>A procedure implemented in .NET</summary>
     public class NativeProcedure : ICallable
     {
         private readonly Func<List<object>, object> func;
@@ -97,16 +85,74 @@ namespace Schemy
             this.name = name;
         }
 
-        public object Call(List<object> args)
+        public object Call(List<object> args) { return this.func(args); }
+
+        public override string ToString()
         {
-            return this.func(args);
+            return string.Format("#<NativeProcedure:{0}>", string.IsNullOrEmpty(this.name) ? "noname" : this.name);
         }
+
+        #region NativeProcedure utility factory methods
 
         /// <summary>
         /// Convenient function method to create a native procedure and doing arity and type check for inputs. It makes the input function
         /// implementation strongly typed.
         /// </summary>
-        /// <see cref="Create{T1, T2}(Func{T1, T2}, string)"/>
+        /// <typeparam name="T1">The type of the return value</typeparam>
+        /// <param name="func">the typed implementation of this procedure</param>
+        /// <param name="name">the name of the procedure (for debugging and diagnostics)</param>
+        public static NativeProcedure Create<T1>(Func<T1> func, string name = null)
+        {
+            return new NativeProcedure(args =>
+            {
+                Utils.CheckArity(args, 0);
+                return func();
+            }, name);
+        }
+
+        public static NativeProcedure Create<T1, T2>(Func<T1, T2> func, string name = null)
+        {
+            return new NativeProcedure(args =>
+            {
+                Utils.CheckArity(args, 1);
+                return func(Utils.ConvertType<T1>(args[0]));
+            }, name);
+        }
+
+        public static NativeProcedure Create<T1, T2, T3>(Func<T1, T2, T3> func, string name = null)
+        {
+            return new NativeProcedure(args =>
+            {
+                Utils.CheckArity(args, 2);
+                return func(Utils.ConvertType<T1>(args[0]), Utils.ConvertType<T2>(args[1]));
+            }, name);
+        }
+
+        public static NativeProcedure Create<T1, T2, T3, T4>(Func<T1, T2, T3, T4> func, string name = null)
+        {
+            return new NativeProcedure(args =>
+            {
+                Utils.CheckArity(args, 3);
+                return func(
+                    Utils.ConvertType<T1>(args[0]),
+                    Utils.ConvertType<T2>(args[1]),
+                    Utils.ConvertType<T3>(args[2]));
+            }, name);
+        }
+
+        public static NativeProcedure Create<T1, T2, T3, T4, T5>(Func<T1, T2, T3, T4, T5> func, string name = null)
+        {
+            return new NativeProcedure(args =>
+            {
+                Utils.CheckArity(args, 4);
+                return func(
+                    Utils.ConvertType<T1>(args[0]),
+                    Utils.ConvertType<T2>(args[1]),
+                    Utils.ConvertType<T3>(args[2]),
+                    Utils.ConvertType<T4>(args[3]));
+            }, name);
+        }
+
         public static NativeProcedure Create<T1, T2, T3, T4, T5, T6, T7, T8>(Func<T1, T2, T3, T4, T5, T6, T7, T8> func, string name = null)
         {
             return new NativeProcedure(args =>
@@ -123,95 +169,7 @@ namespace Schemy
                     );
             }, name);
         }
-
-        /// <summary>
-        /// Convenient function method to create a native procedure and doing arity and type check for inputs. It makes the input function
-        /// implementation strongly typed.
-        /// </summary>
-        /// <see cref="Create{T1, T2}(Func{T1, T2}, string)"/>
-        public static NativeProcedure Create<T1, T2, T3, T4, T5>(Func<T1, T2, T3, T4, T5> func, string name = null)
-        {
-            return new NativeProcedure(args =>
-            {
-                Utils.CheckArity(args, 4);
-                return func(
-                    Utils.ConvertType<T1>(args[0]),
-                    Utils.ConvertType<T2>(args[1]),
-                    Utils.ConvertType<T3>(args[2]),
-                    Utils.ConvertType<T4>(args[3]));
-            }, name);
-        }
-
-        /// <summary>
-        /// Convenient function method to create a native procedure and doing arity and type check for inputs. It makes the input function
-        /// implementation strongly typed.
-        /// </summary>
-        /// <see cref="Create{T1, T2}(Func{T1, T2}, string)"/>
-        public static NativeProcedure Create<T1, T2, T3, T4>(Func<T1, T2, T3, T4> func, string name = null)
-        {
-            return new NativeProcedure(args =>
-            {
-                Utils.CheckArity(args, 3);
-                return func(
-                    Utils.ConvertType<T1>(args[0]),
-                    Utils.ConvertType<T2>(args[1]),
-                    Utils.ConvertType<T3>(args[2]));
-            }, name);
-        }
-
-        /// <summary>
-        /// Convenient function method to create a native procedure and doing arity and type check for inputs. It makes the input function
-        /// implementation strongly typed.
-        /// </summary>
-        /// <see cref="Create{T1, T2}(Func{T1, T2}, string)"/>
-        public static NativeProcedure Create<T1, T2, T3>(Func<T1, T2, T3> func, string name = null)
-        {
-            return new NativeProcedure(args =>
-            {
-                Utils.CheckArity(args, 2);
-                return func(Utils.ConvertType<T1>(args[0]), Utils.ConvertType<T2>(args[1]));
-            }, name);
-        }
-
-        /// <summary>
-        /// Convenient function method to create a native procedure and doing arity and type check for inputs. It makes the input function
-        /// implementation strongly typed.
-        /// </summary>
-        /// <typeparam name="T1">The type of the 1st argument</typeparam>
-        /// <typeparam name="T2">The type of the 2nd argument</typeparam>
-        /// <param name="func">The function implementation</param>
-        /// <param name="name">The name of the function</param>
-        public static NativeProcedure Create<T1, T2>(Func<T1, T2> func, string name = null)
-        {
-            return new NativeProcedure(args =>
-            {
-                Utils.CheckArity(args, 1);
-                return func(Utils.ConvertType<T1>(args[0]));
-            }, name);
-        }
-
-        /// <summary>
-        /// Convenient function method to create a native procedure and doing arity and type check for inputs. It makes the input function
-        /// implementation strongly typed.
-        /// </summary>
-        /// <see cref="Create{T1, T2}(Func{T1, T2}, string)"/>
-        public static NativeProcedure Create<T1>(Func<T1> func, string name = null)
-        {
-            return new NativeProcedure(args =>
-            {
-                Utils.CheckArity(args, 0);
-                return func();
-            }, name);
-        }
-
-        /// <summary>
-        /// ToString implementation
-        /// </summary>
-        /// <returns>the string representation</returns>
-        public override string ToString()
-        {
-            return string.Format("#<NativeProcedure:{0}>", string.IsNullOrEmpty(this.name) ? "noname" : this.name);
-        }
+        
+        #endregion NativeProcedure utility factory methods
     }
 }
-

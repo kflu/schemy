@@ -172,17 +172,17 @@ namespace Schemy
                     string tokenStr = (string)token;
                     if (tokenStr == "(")
                     {
-                        var L = new List<object>();
+                        var list = new List<object>();
                         while (true)
                         {
                             token = port.NextToken();
                             if (token is string && (string)token == ")")
                             {
-                                return L;
+                                return list;
                             }
                             else
                             {
-                                L.Add(readAhead(token));
+                                list.Add(readAhead(token));
                             }
                         }
                     }
@@ -521,7 +521,7 @@ namespace Schemy
         {
             private const string tokenizer = @"^\s*(,@|[('`,)]|""(?:[\\].|[^\\""])*""|;.*|[^\s('""`,;)]*)(.*)";
 
-            private TextReader file;
+            private readonly TextReader file;
             private string line;
 
             public InPort(TextReader file)

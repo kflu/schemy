@@ -12,9 +12,7 @@ namespace Schemy
     {
         private readonly IDictionary<Symbol, object> store;
 
-        /// <summary>
-        /// The enclosing environment. For top level env, this is null.
-        /// </summary>
+        /// <summary>The enclosing environment. For top level env, this is null.</summary>
         private readonly Environment outer;
 
         public Environment(IDictionary<Symbol, object> env, Environment outer)
@@ -28,6 +26,9 @@ namespace Schemy
             return new Environment(new Dictionary<Symbol, object>(), null);
         }
 
+        /// <summary>
+        /// Bind values to parameters to create an environment, and link with an outer environment.
+        /// </summary>
         public static Environment FromVariablesAndValues(Union<Symbol, List<Symbol>> parameters, List<object> values, Environment outer)
         {
             return parameters.Use(
